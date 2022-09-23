@@ -1,4 +1,4 @@
-#Lava Engine
+# Lava Engine
 ## Easy, light, 2D Web-Game Engine using JavaScript and Canvas
 ## For teaching and learning JS and game-dev: Lava Engine's goal is give programmers the skills and confidence to write (and understand) as much of their project as possible.
 

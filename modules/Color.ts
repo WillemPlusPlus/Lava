@@ -1,45 +1,115 @@
 import colourNames from "../data/color-names"
-import {bound} from "./utils"
+import {bound, norm} from "./utils"
 import {Channels} from "./Types"
 
 class Color{
-
+    static ERROR_CONSTRUCT_MODE = "Color object constructor error: This input type cannot be used with this contructor mode"
     channels: Channels
-    alpha: 1
+    alpha:number
+    name:string
 
 
-    constructor(){
-
+    constructor(channels:Channels|string, mode=0, alpha = 1){
+        switch(mode){
+            case 0:
+                if(typeof channels == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                this.channels = channels.map(c=>norm(c)) as Channels
+                break
+            case 1:
+                if(typeof channels == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                this.channels = Color.hsvToRgb([norm(channels[0],{min:0, max:360}),channels[1],channels[2]])
+                break
+            case 2:
+                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                this.channels = Color.hexToRgb(channels)
+                break
+            case 3:
+                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                if(channels.length != 7)throw new Error(channels + " must take the format #FFFFFF in order to be a valid hexadecimal color value ")
+                this.channels = Color.hexToRgb(channels)
+                break
+            case 4:
+                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                const hex = Color.cssToHex(channels)
+                if(!hex)throw new Error(channels + " is not a valid css color name")
+                this.channels = Color.hexToRgb(hex)
+                this.name = channels
+                break
+        }
+        this.name = Color.rgbToCss(this.channels)
+        this.alpha = alpha
     }
 
-    get rgb(){
-        return
+
+    get rgb():Channels{
+        return this.channels.map(c=>Math.floor(255*c)) as Channels
     }
 
-    get rgba(){
-        return
+    get a():number{
+        return this.alpha
     }
 
     get hsv(){
-        return 
+        let hsv = Color.rgbToHsv(this.channels)
+        hsv[0]*360
+        return hsv
     }
 
     get hex(){
-        return 
+        return Color.rgbToHex(this.channels)
     }
 
     get css(){
-        return
+        return this.name?this.name:this.hex
+    }
+
+    static rgbToCss(rgb:Channels){
+        return Color.hexToCss(Color.rgbToHex(rgb))
+    }
+
+    static hexToCss(hex:string, isNormal = true){
+        for(let [k, v] of Object.entries(colourNames)){
+            if(v==hex) return k
+        }
+        return ""
+        
+    }
+
+    static cssToHex(name:string){
+        return colourNames[name]
+        
+    }
+
+
+    static hexToRgb(hex:string, isNormal = true): Channels{
+        let rgb = [0,0,0]
+        let scale = isNormal?255:1
+        rgb.forEach((c,i)=>{
+            const cString = hex.substring(2*i+1,2*i+4)
+            rgb[i] = parseInt(cString)/scale
+        })
+        return rgb as Channels
+    }
+
+    static rgbToHex(rgb:Channels, isNormal = true):string{
+        const channels = isNormal?rgb.map(c=>Math.floor(255*c)):rgb
+         return channels.reduce((s,c)=>{
+            const cString  = c.toString(16).padStart(2,"0")
+            return s + cString 
+        },"#")
+
     }
 
     /**
      * map a RGB color to its HSV representation
      * Based on: https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
-     * @param rgb [red, green, blue]: numbers in range 0-1
+     * @param rgb [red, green, blue]: numbers 
+     * @param isNormal boolean: true if input domain is 0-1 else 0-255
      * @returns [hue, sat, value]: numbers in range 0-1
      */
-    static rgbToHsv(rgb:Channels):Channels{
-        
+    static rgbToHsv(rgb:Channels, isNormal = true):Channels{
+        const domain = isNormal?{min:0,max:1}:{min:0, max:255}
+        const channels = rgb.map(c=>norm(c, domain))
         const max = Math.max(...rgb)
         const min = Math.min(...rgb)
         const c = max-min
@@ -48,7 +118,7 @@ class Color{
         if(c){
             while(rgb[h]!=max)h++
             const x = (h+1)%3-(h+2)%3
-            h = (h*2+x/min)/6
+            h = (h*2+x/min)*(isNormal?1/6:60)
         }
 
         return [h,s,max]
@@ -59,14 +129,15 @@ class Color{
     /**
      * map a HSV color to its RGB representation
      * Based on: https://en.wikipedia.org/wiki/HSL_and_HSV#HSV_to_RGB
-     * @param hsv [hue, sat, value]: numbers in range 0-1
+     * @param hsv [hue, sat, value]: numbers
+     * @param isNormal boolean: true if input domain is [0-1, 0-1, 0-1] else [0-360, 0-1, 0-1]
      * @returns [red, green, blue]: numbers in range 0-1
      */
 
-    static hsvToRgb(hsv:Channels):Channels{
-        let h = bound(hsv[0]) * 6
-        let s = bound(hsv[1])
-        let v = bound(hsv[2])
+    static hsvToRgb(hsv:Channels, isNormal = true):Channels{
+        let h = isNormal?hsv[0] * 6:hsv[0] / 60
+        let s = hsv[1]
+        let v = hsv[2]
 
         const c = v * s
         const x = c * (1 - Math.abs(h % 2 - 1))
@@ -78,8 +149,8 @@ class Color{
         if(h> 2)rgb.unshift(rgb.pop() as number);
         if(h > 4)rgb.unshift(rgb.pop() as number);
         
-
-        return [rgb[0],rgb[1],rgb[2]];
+        const scale = isNormal?1:255
+        return [rgb[0]*scale,rgb[1]*scale,rgb[2]*scale];
 
     }
 

@@ -8,6 +8,16 @@ class Color{
     alpha:number
     name:string
 
+    /**
+     * new Color Object
+     * @param channels Channels | string
+     * @param mode 
+     *  0 : RGB [0-255,0-255,0-255]
+     *  1 : HSV [0-360,0-1,0-1]
+     *  2 : hexadecimal string
+     *  3 : css color string
+     * @param alpha number 0-1
+     */
 
     constructor(channels:Channels|string, mode=0, alpha = 1){
         switch(mode){
@@ -21,14 +31,10 @@ class Color{
                 break
             case 2:
                 if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
-                this.channels = Color.hexToRgb(channels)
-                break
-            case 3:
-                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
                 if(channels.length != 7)throw new Error(channels + " must take the format #FFFFFF in order to be a valid hexadecimal color value ")
                 this.channels = Color.hexToRgb(channels)
                 break
-            case 4:
+            case 3:
                 if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
                 const hex = Color.cssToHex(channels)
                 if(!hex)throw new Error(channels + " is not a valid css color name")
@@ -37,36 +43,60 @@ class Color{
                 break
         }
         this.name = Color.rgbToCss(this.channels)
-        this.alpha = alpha
+        this.alpha = bound(alpha)
     }
 
-
+    /**
+     * get rgb representation
+     */
     get rgb():Channels{
         return this.channels.map(c=>Math.floor(255*c)) as Channels
     }
 
+    /**
+     * get alpha channel
+     */
     get a():number{
         return this.alpha
     }
 
+    /**
+     * get hsv representation
+     */
     get hsv(){
         let hsv = Color.rgbToHsv(this.channels)
         hsv[0]*360
         return hsv
     }
 
+    /**
+     * get hexadecimal representation
+    */
     get hex(){
         return Color.rgbToHex(this.channels)
     }
 
+    /**
+    * get css word representation
+    */
     get css(){
         return this.name?this.name:this.hex
     }
 
+    /**
+     * map a RGB color to its word representation
+     * @param rgb  [red, green, blue] noramilsed only
+     * @returns string: css color word
+     */
     static rgbToCss(rgb:Channels){
         return Color.hexToCss(Color.rgbToHex(rgb))
     }
 
+    /**
+     * map a RGB color to its word representation
+     * @param rgb  [red, green, blue] noramilsed only
+     * @returns string: css color word
+     */
     static hexToCss(hex:string, isNormal = true){
         for(let [k, v] of Object.entries(colourNames)){
             if(v==hex) return k
@@ -75,12 +105,21 @@ class Color{
         
     }
 
+    /**
+     * map a css color to its hex representation
+     * @param name string: css color word
+     * @returns string: hexademical color
+     */
     static cssToHex(name:string){
         return colourNames[name]
-        
     }
 
-
+    /**
+     * map a hex color to its rgb representation 
+     * @param hex string: hexademical color
+     * @param isNormal boolean: true if range is 0-1 else 0-255
+     * @returns [red, green, blue]: numbers 
+     */
     static hexToRgb(hex:string, isNormal = true): Channels{
         let rgb = [0,0,0]
         let scale = isNormal?255:1
@@ -104,7 +143,7 @@ class Color{
      * map a RGB color to its HSV representation
      * Based on: https://en.wikipedia.org/wiki/HSL_and_HSV#From_RGB
      * @param rgb [red, green, blue]: numbers 
-     * @param isNormal boolean: true if input domain is 0-1 else 0-255
+     * @param isNormal boolean: true if i/o range is 0-1 else 0-255
      * @returns [hue, sat, value]: numbers in range 0-1
      */
     static rgbToHsv(rgb:Channels, isNormal = true):Channels{
@@ -130,7 +169,7 @@ class Color{
      * map a HSV color to its RGB representation
      * Based on: https://en.wikipedia.org/wiki/HSL_and_HSV#HSV_to_RGB
      * @param hsv [hue, sat, value]: numbers
-     * @param isNormal boolean: true if input domain is [0-1, 0-1, 0-1] else [0-360, 0-1, 0-1]
+     * @param isNormal boolean: true if i/o range is [0-1, 0-1, 0-1] else [0-360, 0-1, 0-1]
      * @returns [red, green, blue]: numbers in range 0-1
      */
 

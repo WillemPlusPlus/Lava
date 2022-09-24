@@ -1,0 +1,1 @@
+export type Channels = [number, number, number]

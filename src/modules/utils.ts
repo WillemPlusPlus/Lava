@@ -6,5 +6,7 @@ export const bound = (n:number, min=0, max=1):number => {
 
 export const norm = (n:number, from:Range = {min:0, max:255}, to:Range = {min:0, max:1}) => {
     const norm = (n-from.min)/(from.max-from.min)
-    return norm*(to.max-to.min)+to.min
+    const result = norm*(to.max-to.min)+to.min
+    console.log(result)
+    return norm
 }

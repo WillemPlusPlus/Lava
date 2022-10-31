@@ -1,8 +1,8 @@
-import colourNames from "../data/color-names"
+import colourNames from "../../data/color-names"
 import {bound, norm} from "./utils"
 import {Channels} from "./Types"
 
-class Color{
+export class Color{
     static ERROR_CONSTRUCT_MODE = "Color object constructor error: This input type cannot be used with this contructor mode"
     channels: Channels
     alpha:number
@@ -19,27 +19,39 @@ class Color{
      * @param alpha number 0-1
      */
 
-    constructor(channels:Channels|string, mode=0, alpha = 1){
-        switch(mode){
+    constructor(input:Channels|string, mode = -1, alpha = 1){
+        let modeInput
+
+        if(mode!=-1){
+
+            modeInput = mode
+        }else{
+            if(typeof input == "string")modeInput = input[0]=="#"?2:3;
+            else modeInput = Color.isValidRGB(input as Channels)?0:1;
+
+            
+        }
+
+        switch(modeInput){
             case 0:
-                if(typeof channels == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
-                this.channels = channels.map(c=>norm(c)) as Channels
+                if((typeof input) == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                this.channels = (input as Channels).map(c=>norm(c)) as Channels
                 break
             case 1:
-                if(typeof channels == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
-                this.channels = Color.hsvToRgb([norm(channels[0],{min:0, max:360}),channels[1],channels[2]])
+                if((typeof input) == "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                this.channels = Color.hsvToRgb([norm(input[0] as number,{min:0, max:360}),norm(input[1] as number,{min:0, max:100}),norm(input[2] as number,{min:0, max:100})])
                 break
             case 2:
-                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
-                if(channels.length != 7)throw new Error(channels + " must take the format #FFFFFF in order to be a valid hexadecimal color value ")
-                this.channels = Color.hexToRgb(channels)
+                if((typeof input) != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                if(input.length != 7)throw new Error(input + " must take the format #FFFFFF in order to be a valid hexadecimal color value ")
+                this.channels = Color.hexToRgb(input)
                 break
             case 3:
-                if(typeof channels != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
-                const hex = Color.cssToHex(channels)
-                if(!hex)throw new Error(channels + " is not a valid css color name")
+                if((typeof input) != "string") throw new Error(Color.ERROR_CONSTRUCT_MODE)
+                const hex = Color.cssToHex(input as string)
+                if(!hex)throw new Error(input + " is not a valid css color name")
                 this.channels = Color.hexToRgb(hex)
-                this.name = channels
+                this.name = input as string
                 break
         }
         this.name = Color.rgbToCss(this.channels)
@@ -84,6 +96,27 @@ class Color{
     }
 
     /**
+     * validate a rgb channel array
+     * @param rgb Channels
+     * @returns true if valid else false
+     */
+    static isValidRGB(rgb:Channels):boolean{
+        for(let c of rgb){if(0 > c || c > 255)return false}
+        return true
+    }
+    /**
+     * validate a hsv channel array
+     * @param hsv Channels
+     * @returns true if valid else false
+     */
+    static isValidHSV(hsv:Channels):boolean{
+        if(hsv[0] > 360 || hsv[0] < 0)return false
+        if(hsv[1] > 100 || hsv[1] < 0)return false
+        if(hsv[2] > 100 || hsv[2] < 0)return false
+        return true
+    }
+
+    /**
      * map a RGB color to its word representation
      * @param rgb  [red, green, blue] noramilsed only
      * @returns string: css color word
@@ -93,7 +126,7 @@ class Color{
     }
 
     /**
-     * map a RGB color to its word representation
+     * map a hex color to its word representation
      * @param rgb  [red, green, blue] noramilsed only
      * @returns string: css color word
      */
@@ -124,12 +157,18 @@ class Color{
         let rgb = [0,0,0]
         let scale = isNormal?255:1
         rgb.forEach((c,i)=>{
-            const cString = hex.substring(2*i+1,2*i+4)
-            rgb[i] = parseInt(cString)/scale
+            const cString = hex.substring(2*i+1,2*i+3)
+            rgb[i] = parseInt(cString,16)/scale
         })
         return rgb as Channels
     }
 
+    /**
+     * map a rgb color to its hex representation 
+     * @param rgb [red, green, blue]: numbers
+     * @param isNormal boolean: true if range is 0-1 else 0-255
+     * @returns string: hexademical color
+     */
     static rgbToHex(rgb:Channels, isNormal = true):string{
         const channels = isNormal?rgb.map(c=>Math.floor(255*c)):rgb
          return channels.reduce((s,c)=>{
@@ -169,27 +208,29 @@ class Color{
      * map a HSV color to its RGB representation
      * Based on: https://en.wikipedia.org/wiki/HSL_and_HSV#HSV_to_RGB
      * @param hsv [hue, sat, value]: numbers
-     * @param isNormal boolean: true if i/o range is [0-1, 0-1, 0-1] else [0-360, 0-1, 0-1]
+     * @param isNormalIn  boolean: true if in  range is [0-1, 0-1, 0-1] else [0-360, 0-100, 0-100]
+     * @param isNormalOut boolean: true if out range is [0-1, 0-1, 0-1] else [0-360, 0-100, 0-100]
      * @returns [red, green, blue]: numbers in range 0-1
      */
 
-    static hsvToRgb(hsv:Channels, isNormal = true):Channels{
-        let h = isNormal?hsv[0] * 6:hsv[0] / 60
-        let s = hsv[1]
-        let v = hsv[2]
+    static hsvToRgb(hsv:Channels, isNormalIn = true, isNormalOut = true):Channels{
+        let h = isNormalIn?  hsv[0] * 6: hsv[0] / 60
+        let s = isNormalIn?  hsv[1]    : hsv[1] / 100
+        let v = isNormalIn?  hsv[2]    : hsv[2] / 100
 
         const c = v * s
         const x = c * (1 - Math.abs(h % 2 - 1))
         const m = v - c;
 
-        let rgb = [x+m, c+m, m]
+        let rgb = (Math.floor(h) % 2)?
+            [x + m, c + m, m]:
+            [c + m, x + m, m]
 
-        if(Math.floor(h) % 2)rgb = [c+m, x+m, m]
-        if(h> 2)rgb.unshift(rgb.pop() as number);
-        if(h > 4)rgb.unshift(rgb.pop() as number);
-        
-        const scale = isNormal?1:255
-        return [rgb[0]*scale,rgb[1]*scale,rgb[2]*scale];
+        if(h >= 2)rgb.unshift(rgb.pop() as number);
+        if(h >= 4)rgb.unshift(rgb.pop() as number);
+    
+        const result = rgb.map((c)=>isNormalOut?c:Math.round(c*255))
+        return result as Channels;
 
     }
 

@@ -1,0 +1,39 @@
+{
+  "name": "lava",
+  "version": "1.0.0",
+  "description": "Hi this is Will,\r Lava has just finished pre-production and will soon be ready for open-source development and usage by students and teachers of all ages and experience levels.\r I've built this engine around the lessons I’ve learned from running beginner programming classes for high school students and my experiences breaking into web development from a data science background. If you have any questions or issues about Lava (or if you’re running a coding class and want someone to talk to about it) email me at hello@wllm.info",
+  "main": "index.js",
+  "module": "main.js",
+  "type": "module",
+  "watch": {
+    "build": {
+      "patterns": [
+        "/src"
+      ],
+      "extensions": "js,jsx,html,ts,css"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build --verbose",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules npx jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WillemPlusPlus/Lava.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/WillemPlusPlus/Lava/issues"
+  },
+  "homepage": "https://github.com/WillemPlusPlus/Lava#readme",
+  "dependencies": {
+    "esm": "^3.2.25"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^29.0.3",
+    "ts-jest": "^29.0.2"
+  }
+}
